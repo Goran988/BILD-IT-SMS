@@ -19,7 +19,7 @@ public class LoginContext implements Login {
 	private static final String PASSWORD = "root";
 
 	// address of the database
-	private static final String CONN_STRING = "jdbc:mysql://localhost:3333/bildit_sms";
+	private static final String CONN_STRING = "jdbc:mysql://localhost:3306/bildit_sms";
 
 	// prepared statement, selecting all fields from users table
 	private static final String SEARCH_ALL = "SELECT * FROM users";
@@ -49,7 +49,7 @@ public class LoginContext implements Login {
 			// initializing connection
 			conn = DriverManager.getConnection(CONN_STRING, USERNAME, PASSWORD);
 
-			// initializing statement with resultstatement being sensitive to
+			// initializing statement with resultset being sensitive to
 			// changes, and not able to edit values (read only)
 			stmnt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
