@@ -1,29 +1,34 @@
-package org.bildit.sms.test.login;
+package org.bildit.sms.test.session;
 
-import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 
 import org.bildit.sms.test.interfaces.Login;
+import org.bildit.sms.test.login.AbstractConnection;
 import org.bildit.sms.test.login.AttemptedUser;
 
 /**
  * @author Ognjen Mišiæ
  *
  */
-public class LoginContext implements Login {
-	// username and password for connecting to our database (CONN_STRING)
-	private static final String USERNAME = "root";
-	private static final String PASSWORD = "root";
+public class SessionContext extends AbstractConnection implements Login {
+	private AttemptedUser sessionUser;
+	
+	public final AttemptedUser getSessionUser() {
+		return sessionUser;
+	}
 
-	// address of the database
-	private static final String CONN_STRING = "jdbc:mysql://localhost:3306/bildit_sms";
+
+	public final void setSessionUser(AttemptedUser sessionUser) {
+		this.sessionUser = sessionUser;
+	}
+
 
 	// prepared statement, selecting all fields from users table
 	private static final String SEARCH_ALL = "SELECT * FROM users";
-
+	
+	
 	/**
 	 * Method that takes
 	 * 
@@ -40,16 +45,12 @@ public class LoginContext implements Login {
 		// initializing what we want to return
 		AttemptedUser au = new AttemptedUser();
 
-		// declaring resources, not initializing them
-		Connection conn = null;
-		Statement stmnt = null;
-		ResultSet rs = null;
 		try {
 
 			// initializing connection
 			conn = DriverManager.getConnection(CONN_STRING, USERNAME, PASSWORD);
 
-			// initializing statement with resultset being sensitive to
+			// initializing statement with resultstatement being sensitive to
 			// changes, and not able to edit values (read only)
 			stmnt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE,
 					ResultSet.CONCUR_READ_ONLY);
@@ -89,7 +90,7 @@ public class LoginContext implements Login {
 							au.setValid(true);
 							au.setUsername(rs.getString("username"));
 							au.setErrorMessage(null);
-
+							
 							// we break cause are done
 							break;
 						} else {

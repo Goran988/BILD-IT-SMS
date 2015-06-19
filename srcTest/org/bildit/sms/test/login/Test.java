@@ -2,11 +2,13 @@ package org.bildit.sms.test.login;
 
 import java.sql.SQLException;
 
+import org.bildit.sms.test.session.SessionContext;
+
 public class Test {
 
 	public static void main(String[] args) {
 
-		LoginContext lc = new LoginContext();
+		SessionContext lc = new SessionContext();
 		AttemptedUser attemptedUser = new AttemptedUser();
 		try {
 			attemptedUser = lc.logIn("laog", "ognjen");
