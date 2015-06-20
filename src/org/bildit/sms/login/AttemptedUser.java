@@ -5,7 +5,7 @@ package org.bildit.sms.login;
  *
  */
 
-public class ValidUser {
+public class AttemptedUser {
 
 	private String firstName;
 	private String lastName;
@@ -14,10 +14,10 @@ public class ValidUser {
 	private boolean isValid;
 	private String errorMessage;
 
-	public ValidUser() {
+	public AttemptedUser() {
 	}
 
-	public ValidUser(String firstName, String lastName, String username,
+	public AttemptedUser(String firstName, String lastName, String username,
 			int roleID, boolean isValid, String errorMessage) {
 		this.firstName = firstName;
 		this.lastName = lastName;
