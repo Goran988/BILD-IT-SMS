@@ -91,12 +91,8 @@ public abstract class AbstractPermissions extends AbstractConnection {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
-				if (stmnt != null) {
-					stmnt.close();
-				}
-				if (conn != null) {
-					conn.close();
-				}
+				closeStatement(stmnt);
+				closeConnection(conn);
 			}
 
 		} else {
@@ -121,8 +117,8 @@ public abstract class AbstractPermissions extends AbstractConnection {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		} finally {
-			closeConnection(conn);
 			closeStatement(stmnt);
+			closeConnection(conn);
 		}
 	}
 
@@ -154,7 +150,7 @@ public abstract class AbstractPermissions extends AbstractConnection {
 			}
 
 		} else {
-			setErrorMessage("First name must at least two caharacters long");
+			setErrorMessage("First name must be at least two caharacters long");
 		}
 	}
 
@@ -187,7 +183,7 @@ public abstract class AbstractPermissions extends AbstractConnection {
 			}
 
 		} else {
-			setErrorMessage("Last name must at least two caharacters long");
+			setErrorMessage("Last name must be at least two caharacters long");
 		}
 	}
 

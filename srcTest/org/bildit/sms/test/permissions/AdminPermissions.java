@@ -1,10 +1,11 @@
 package org.bildit.sms.test.permissions;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.bildit.sms.test.beans.User;
 
@@ -65,8 +66,9 @@ public class AdminPermissions extends AbstractPermissions {
 	 * @param str
 	 *            is the passed email argument
 	 * @return true if regex check passes, false if not
+	 * @throws SQLException
 	 */
-	public static boolean isEmailValid(String str) {
+	protected static boolean isEmailValid(String str) throws SQLException {
 		// regex that checks email validity
 		final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
 				+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
@@ -76,7 +78,7 @@ public class AdminPermissions extends AbstractPermissions {
 			try {
 				conn = connectToDb();
 				stmnt = createReadOnlyStatement(conn);
-				ResultSet rs = stmnt.executeQuery(SELECT_ALL);
+				rs = stmnt.executeQuery(SELECT_ALL);
 				while (rs.next()) {
 					if (rs.getString("email").equals(str)) {
 						result = false;
@@ -87,6 +89,12 @@ public class AdminPermissions extends AbstractPermissions {
 			} catch (SQLException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+			} finally {
+				if (rs != null) {
+					rs.close();
+				}
+				closeStatement(stmnt);
+				closeConnection(conn);
 			}
 		}
 
@@ -115,7 +123,7 @@ public class AdminPermissions extends AbstractPermissions {
 			try {
 				conn = connectToDb();
 				stmnt = createReadOnlyStatement(conn);
-				ResultSet rs = stmnt.executeQuery(SELECT_ALL);
+				rs = stmnt.executeQuery(SELECT_ALL);
 				while (rs.next()) {
 					if (rs.getString("username").equals(username)) {
 						result = false;
@@ -129,12 +137,8 @@ public class AdminPermissions extends AbstractPermissions {
 				if (rs != null) {
 					rs.close();
 				}
-				if (stmnt != null) {
-					stmnt.close();
-				}
-				if (conn != null) {
-					conn.close();
-				}
+				closeStatement(stmnt);
+				closeConnection(conn);
 			}
 
 		}
@@ -217,8 +221,7 @@ public class AdminPermissions extends AbstractPermissions {
 		} else {
 			setErrorMessage("Wrong role type.");
 		}
-		if (getErrorMessage() != null
-				&& !getErrorMessage().isEmpty()) {
+		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
 			return newUser;
@@ -264,22 +267,17 @@ public class AdminPermissions extends AbstractPermissions {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
-				if (stmnt != null) {
-					stmnt.close();
-				}
-				if (conn != null) {
-					conn.close();
-				}
+				closeStatement(stmnt);
+				closeConnection(conn);
 			}
 		}
 	}
-	
 
 	/**
-	 * This method removes the user with that username from the database, 
-	 * exactly it sets the field is_deleted to 'true',
-	 * it doesn't remove the user permanently
-	 *  
+	 * This method removes the user with that username from the database,
+	 * exactly it sets the field is_deleted to 'true', it doesn't remove the
+	 * user permanently
+	 * 
 	 * @author Marina Sljivic
 	 * @param username
 	 * @throws SQLException
@@ -311,13 +309,107 @@ public class AdminPermissions extends AbstractPermissions {
 			if (rs != null) {
 				rs.close();
 			}
-			if (stmnt != null) {
-				stmnt.close();
-			}
-			if (conn != null) {
-				conn.close();
-			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+
 		}
 	}
 
+	/**
+	 * @author Novislav Sekulic
+	 * 
+	 * @return list of all users from database. return type List<User>.
+	 * @throws SQLException
+	 */
+	public static List<User> listAllUsers() throws SQLException {
+
+		List<User> userList = new ArrayList<>();
+
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+
+			rs = stmnt.executeQuery(SELECT_ALL);
+
+			// Checking is there a more user in a database.
+			while (rs.next()) {
+				// if user flag "is_deleted" set on true, dont create User
+				// object.
+				if ((rs.getString("is_deleted").equals("false"))) {
+					userList.add(new User(rs.getInt("user_id"), rs
+							.getString("first_name"),
+							rs.getString("last_name"), rs
+									.getString("date_of_birth"), rs
+									.getString("phone_number"), rs
+									.getString("email"), rs
+									.getString("username"), rs
+									.getString("password"), rs
+									.getString("image_path"), rs
+									.getInt("city_id"), rs.getInt("role_id")));
+				}
+			}
+
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+
+		return userList;
+	}
+
+	/**
+	 * Method that finds a user by his username (since its unique) in the
+	 * database and returns it
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param username
+	 *            which we use to find the user
+	 * @return user object with all fields nonnull if there is such a user, if
+	 *         not, return a null object and create an error message
+	 * @throws SQLException
+	 */
+	public static User returnUserFromDB(String username) throws SQLException {
+		User returnUser = new User();
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+			rs = stmnt.executeQuery(SELECT_ALL);
+			while (rs.next()) {
+				if (rs.getString("username").equals(username)) {
+					returnUser.setFirstName(rs.getString("first_name"));
+					returnUser.setLastName(rs.getString("last_name"));
+					returnUser.setCityID(rs.getInt("city_id"));
+					returnUser.setDayOfBirth(rs.getString("date_of_birth"));
+					returnUser.setEmail(rs.getString("email"));
+					returnUser.setUserID(rs.getInt("user_id"));
+					returnUser.setGender(rs.getString("gender"));
+					returnUser.setImagePath(rs.getString("image_path"));
+					returnUser.setRoleID(rs.getInt("role_id"));
+					returnUser.setPassword(rs.getString("password"));
+					returnUser.setPhoneNumber(rs.getString("phone_number"));
+					returnUser.setDeleted(rs.getBoolean("is_deleted"));
+					returnUser.setUsername(rs.getString("username"));
+					setErrorMessage(null);
+					break;
+				} else {
+					setErrorMessage("Could not match username.");
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+		return returnUser;
+
+	}
 }
