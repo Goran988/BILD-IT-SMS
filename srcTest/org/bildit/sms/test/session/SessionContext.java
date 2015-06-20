@@ -1,7 +1,5 @@
 package org.bildit.sms.test.session;
 
-import java.sql.DriverManager;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 
 import org.bildit.sms.test.interfaces.Login;
@@ -13,22 +11,14 @@ import org.bildit.sms.test.login.AttemptedUser;
  *
  */
 public class SessionContext extends AbstractConnection implements Login {
-	private AttemptedUser sessionUser;
-	
+	private static AttemptedUser sessionUser;
+
 	public final AttemptedUser getSessionUser() {
 		return sessionUser;
 	}
 
-
-	public final void setSessionUser(AttemptedUser sessionUser) {
-		this.sessionUser = sessionUser;
-	}
-
-
 	// prepared statement, selecting all fields from users table
-	private static final String SEARCH_ALL = "SELECT * FROM users";
-	
-	
+
 	/**
 	 * Method that takes
 	 * 
@@ -39,8 +29,8 @@ public class SessionContext extends AbstractConnection implements Login {
 	 *            AttemptedUser in any case.
 	 **/
 	@Override
-	public AttemptedUser logIn(String username, String password)
-			throws SQLException {
+	public void logIn(String username, String password) throws SQLException {
+		String searchAllUsers = "SELECT * FROM users";
 		// TODO Auto-generated method stub
 		// initializing what we want to return
 		AttemptedUser au = new AttemptedUser();
@@ -48,16 +38,15 @@ public class SessionContext extends AbstractConnection implements Login {
 		try {
 
 			// initializing connection
-			conn = DriverManager.getConnection(CONN_STRING, USERNAME, PASSWORD);
+			 conn = connectToDb();
 
 			// initializing statement with resultstatement being sensitive to
 			// changes, and not able to edit values (read only)
-			stmnt = conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE,
-					ResultSet.CONCUR_READ_ONLY);
+			stmnt = createReadOnlyStatement(conn);
 
 			// initializing resource set (aka pointer) and executing the
 			// prepared sql statement
-			rs = stmnt.executeQuery(SEARCH_ALL);
+			rs = stmnt.executeQuery(searchAllUsers);
 
 			// moving te pointer to the final position
 			rs.last();
@@ -90,7 +79,7 @@ public class SessionContext extends AbstractConnection implements Login {
 							au.setValid(true);
 							au.setUsername(rs.getString("username"));
 							au.setErrorMessage(null);
-							
+
 							// we break cause are done
 							break;
 						} else {
@@ -129,7 +118,11 @@ public class SessionContext extends AbstractConnection implements Login {
 				conn.close();
 			}
 		}
-		return au;
+		sessionUser = au;
 	}
 
+	public void logOut() {
+		sessionUser = null;
+	}
+	
 }

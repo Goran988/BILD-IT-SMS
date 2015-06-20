@@ -6,10 +6,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 
+/**
+ * @author Ognjen Mišiæ
+ *
+ */
 public abstract class AbstractConnection {
-	protected Connection conn = null;
-	protected Statement stmnt = null;
-	protected ResultSet rs = null;
+	protected static Connection conn = null;
+	protected static Statement stmnt = null;
+	protected static ResultSet rs = null;
 
 	// username and password for connecting to our database (CONN_STRING)
 	protected static final String USERNAME = "root";
@@ -18,18 +22,26 @@ public abstract class AbstractConnection {
 	// address of the database
 	protected static final String CONN_STRING = "jdbc:mysql://localhost:3333/bildit_sms";
 
-	protected Connection connectToDb() throws SQLException {
-		return conn = DriverManager.getConnection(CONN_STRING, USERNAME,
-				CONN_STRING);
+	protected static Connection connectToDb() throws SQLException {
+		return conn = DriverManager.getConnection(CONN_STRING, USERNAME, PASSWORD);
 	}
 
-	protected void closeConnection(Connection conn) throws SQLException {
-		if (conn != null) {
+	protected static void closeConnection(Connection conn) throws SQLException {
 			conn.close();
-		}
 	}
-
-	protected Statement createStatement(Connection conn, ResultSet rs) {
-		return null;
+	
+	protected static void closeStatement(Statement stmnt) throws SQLException {
+		stmnt.close();
 	}
+	
+	//currently these two do the same thing...
+	protected static Statement createReadOnlyStatement(Connection conn) throws SQLException {
+		return conn.createStatement(ResultSet.TYPE_SCROLL_SENSITIVE, ResultSet.CONCUR_READ_ONLY);
+	}
+	
+	protected static Statement createUpdateableStatement (Connection conn) throws SQLException  {
+		return conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_UPDATABLE);
+	}
+	
+	
 }
