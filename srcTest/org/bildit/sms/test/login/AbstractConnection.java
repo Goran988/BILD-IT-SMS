@@ -14,7 +14,10 @@ public abstract class AbstractConnection {
 	protected static Connection conn = null;
 	protected static Statement stmnt = null;
 	protected static ResultSet rs = null;
-
+	
+	// select all from our db
+	protected static final String SELECT_ALL = "SELECT * FROM users";
+	
 	// username and password for connecting to our database (CONN_STRING)
 	protected static final String USERNAME = "root";
 	protected static final String PASSWORD = "root";

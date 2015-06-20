@@ -12,15 +12,30 @@ import org.bildit.sms.test.login.AttemptedUser;
 public abstract class AbstractPermissions extends AbstractConnection {
 	private static String errorMessage;
 
+	public static final void setErrorMessage(String errorMessage) {
+		AbstractPermissions.errorMessage = errorMessage;
+	}
 
 	public static final String getErrorMessage() {
 		return errorMessage;
 	}
 
+	protected static boolean isImagePathValid(String path) {
+		String imageRegex = "([^\\s]+(\\.(?i)(jpg|png))$)";
+		if (path.matches(imageRegex)) {
+			return true;
+		} else {
+			setErrorMessage("Wrong image path or type.");
+			return false;
+		}
+
+	}
+	
+
+
 	public static void changeOwnImage(AttemptedUser sessionUser, String path)
 			throws SQLException {
-		final String imageRegex = "([^\\s]+(\\.(?i)(jpg|png))$)";
-		if (path.matches(imageRegex)) {
+		if (isImagePathValid(path)) {
 			try {
 				conn = connectToDb();
 				stmnt = createUpdateableStatement(conn);
@@ -34,8 +49,6 @@ public abstract class AbstractPermissions extends AbstractConnection {
 				closeConnection(conn);
 				closeStatement(stmnt);
 			}
-		} else {
-			errorMessage = "Wrong image path or type.";
 		}
 	}
 
@@ -48,7 +61,7 @@ public abstract class AbstractPermissions extends AbstractConnection {
 	 *            is the provided password
 	 * @return true if it matches both regexes, false if not
 	 */
-	public static boolean isPasswordValid(String newPassword) {
+	protected static boolean isPasswordValid(String newPassword) {
 		String regexOne = ".*[0-9].*";
 		String regexTwo = ".*[A-Z].*";
 		return newPassword.matches(regexOne) && newPassword.matches(regexTwo)
@@ -87,7 +100,7 @@ public abstract class AbstractPermissions extends AbstractConnection {
 			}
 
 		} else {
-			errorMessage = "Password must be at least 6 characters long and must contain a number and a capital letter.";
+			setErrorMessage("Password must be at least 6 characters long and must contain a number and a capital letter.");
 		}
 	}
 
@@ -101,9 +114,9 @@ public abstract class AbstractPermissions extends AbstractConnection {
 						+ phoneNumber + "'WHERE username =" + "'"
 						+ sessionUser.getUsername() + "'" + ";");
 			} else if (!phoneNumber.matches("^[0-9]*$")) {
-				errorMessage = "Must contain numbers only.";
+				setErrorMessage("Must contain numbers only.");
 			} else {
-				errorMessage = "Phone number not long enough.";
+				setErrorMessage("Phone number not long enough.");
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
@@ -141,7 +154,7 @@ public abstract class AbstractPermissions extends AbstractConnection {
 			}
 
 		} else {
-			errorMessage = "First name must at least two caharacters long";
+			setErrorMessage("First name must at least two caharacters long");
 		}
 	}
 
@@ -174,7 +187,7 @@ public abstract class AbstractPermissions extends AbstractConnection {
 			}
 
 		} else {
-			errorMessage = "Last name must at least two caharacters long";
+			setErrorMessage("Last name must at least two caharacters long");
 		}
 	}
 

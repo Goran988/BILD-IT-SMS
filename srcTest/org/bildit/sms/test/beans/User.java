@@ -18,6 +18,15 @@ public class User {
 	private boolean isDeleted;
 	private int cityID;
 	private int roleID;
+	private String gender;
+
+	public final String getGender() {
+		return gender;
+	}
+
+	public final void setGender(String gender) {
+		this.gender = gender;
+	}
 
 	public User() {
 
