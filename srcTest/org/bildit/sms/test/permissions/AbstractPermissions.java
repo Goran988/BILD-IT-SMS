@@ -12,7 +12,8 @@ import org.bildit.sms.test.login.AttemptedUser;
 public abstract class AbstractPermissions extends AbstractConnection {
 	private static String errorMessage;
 
-	public final String getErrorMessage() {
+
+	public static final String getErrorMessage() {
 		return errorMessage;
 	}
 
