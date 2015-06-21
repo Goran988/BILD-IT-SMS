@@ -46,8 +46,8 @@ public abstract class AbstractPermissions extends AbstractConnection {
 			} catch (SQLException e) {
 				e.printStackTrace();
 			} finally {
-				closeConnection(conn);
 				closeStatement(stmnt);
+				closeConnection(conn);
 			}
 		}
 	}
