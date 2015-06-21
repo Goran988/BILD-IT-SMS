@@ -1,15 +1,19 @@
 package org.bildit.sms.test.permissions;
 
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import org.bildit.sms.test.beans.ClassAttendance;
 import org.bildit.sms.test.beans.User;
 
 public class AdminPermissions extends AbstractPermissions {
+	private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
+			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
 	/**
 	 * @author Ognjen Mišiæ Method that validates date of birth (i.e. you can't
@@ -70,15 +74,13 @@ public class AdminPermissions extends AbstractPermissions {
 	 */
 	protected static boolean isEmailValid(String str) throws SQLException {
 		// regex that checks email validity
-		final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
-				+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 		boolean result = false;
 		if (str.matches(EMAIL_PATTERN)) {
 			result = true;
 			try {
 				conn = connectToDb();
 				stmnt = createReadOnlyStatement(conn);
-				rs = stmnt.executeQuery(SELECT_ALL);
+				rs = stmnt.executeQuery(SELECT_ALL_FROM_USERS);
 				while (rs.next()) {
 					if (rs.getString("email").equals(str)) {
 						result = false;
@@ -123,7 +125,7 @@ public class AdminPermissions extends AbstractPermissions {
 			try {
 				conn = connectToDb();
 				stmnt = createReadOnlyStatement(conn);
-				rs = stmnt.executeQuery(SELECT_ALL);
+				rs = stmnt.executeQuery(SELECT_ALL_FROM_USERS);
 				while (rs.next()) {
 					if (rs.getString("username").equals(username)) {
 						result = false;
@@ -286,7 +288,7 @@ public class AdminPermissions extends AbstractPermissions {
 		try {
 			conn = connectToDb();
 			stmnt = createReadOnlyStatement(conn);
-			rs = stmnt.executeQuery(SELECT_ALL);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_USERS);
 			while (rs.next()) {
 				if (rs.getString("username").equals(username)) {
 					if (rs.getString("is_deleted").equals("false")) {
@@ -329,7 +331,7 @@ public class AdminPermissions extends AbstractPermissions {
 			conn = connectToDb();
 			stmnt = createReadOnlyStatement(conn);
 
-			rs = stmnt.executeQuery(SELECT_ALL);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_USERS);
 
 			// Checking is there a more user in a database.
 			while (rs.next()) {
@@ -378,7 +380,7 @@ public class AdminPermissions extends AbstractPermissions {
 		try {
 			conn = connectToDb();
 			stmnt = createReadOnlyStatement(conn);
-			rs = stmnt.executeQuery(SELECT_ALL);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_USERS);
 			while (rs.next()) {
 				if (rs.getString("username").equals(username)) {
 					returnUser.setFirstName(rs.getString("first_name"));
@@ -409,7 +411,173 @@ public class AdminPermissions extends AbstractPermissions {
 			closeStatement(stmnt);
 			closeConnection(conn);
 		}
-		return returnUser;
+		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
+			return null;
+		} else {
+			return returnUser;
+		}
 
+	}
+
+	/**
+	 * Method that takes a changedUser (can use @method returnUserFromDB for
+	 * that), his username and edits fields we want
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param changedUser
+	 *            a passed user with committed changes and updates database for
+	 *            that user
+	 * @param username
+	 *            is the placeholder username in case we decide to change the
+	 *            username of changedUser, so we still have a way to access the
+	 *            user in the database using his userName
+	 * @throws ParseException
+	 * @throws SQLException
+	 */
+	public static void editUser(User changedUser, String username)
+			throws ParseException, SQLException {
+		if (changedUser != null) {
+			try {
+				conn = connectToDb();
+				stmnt = createReadOnlyStatement(conn);
+				rs = stmnt.executeQuery(SELECT_ALL_FROM_USERS);
+				String sql = "UPDATE users SET first_name='"
+						+ changedUser.getFirstName() + "', last_name ='"
+						+ changedUser.getLastName() + "', date_of_birth='"
+						+ changedUser.getDayOfBirth() + "', gender='"
+						+ changedUser.getGender() + "', phone_number='"
+						+ changedUser.getPhoneNumber() + "', email='"
+						+ changedUser.getEmail() + "', password='"
+						+ changedUser.getPassword() + "', image_path='"
+						+ changedUser.getImagePath() + "', city_id='"
+						+ changedUser.getCityID() + "', role_id='"
+						+ changedUser.getRoleID() + "', username='"
+						+ changedUser.getUsername() + "' WHERE username='"
+						+ username + "';";
+				while (rs.next()) {
+					if (username.equals(rs.getString("username"))) {
+						Statement stmnt2 = createUpdateableStatement(conn);
+						if (changedUser.getFirstName().length() < 2
+								|| changedUser.getFirstName().length() > 44) {
+							setErrorMessage("Invalid first name. No update executed.");
+							break;
+						} else if (changedUser.getLastName().length() < 2
+								|| changedUser.getLastName().length() > 44) {
+							setErrorMessage("Invalid last name. No update executed.");
+							break;
+						} else if (!isValidDate(changedUser.getDayOfBirth())) {
+							break;
+						} else if (changedUser.getUsername().length() < 5) {
+							setErrorMessage("Invalid username, must be at least 5 characters long.");
+							break;
+						} else if (changedUser.getPhoneNumber().length() < 6) {
+							setErrorMessage("Invalid phone number.");
+							break;
+						} else if (!(changedUser.getGender().equals("Male") || changedUser
+								.getGender().equals("Female"))) {
+							setErrorMessage("Invalid gender.");
+							break;
+						} else if (!(changedUser.getEmail()
+								.matches(EMAIL_PATTERN))) {
+							break;
+						} else if (!isImagePathValid(changedUser.getImagePath())) {
+							break;
+						} else if (changedUser.getCityID() < 1
+								|| changedUser.getCityID() > 4) {
+							setErrorMessage("Invalid city id.");
+							break;
+						} else if (!(changedUser.getRoleID() == 1 || changedUser
+								.getRoleID() == 2)) {
+							setErrorMessage("Wrong role type.");
+							break;
+						} else {
+							stmnt2.executeUpdate(sql);
+							setErrorMessage(null);
+							break;
+						}
+					} else {
+						setErrorMessage("No such username in the database.");
+					}
+				}
+
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				if (rs != null) {
+					rs.close();
+				}
+				closeStatement(stmnt);
+				closeConnection(conn);
+			}
+		}
+	}
+
+	public static ClassAttendance returnClassAttendance(int classID)
+			throws SQLException {
+		ClassAttendance ca = new ClassAttendance();
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_CLASSES_ATTENDANCE);
+			while (rs.next()) {
+				if (rs.getInt("class_id") == classID) {
+					ca.setClassDescription(rs.getString("class_description"));
+					ca.setDate(rs.getString("date"));
+					ca.setDuration(rs.getInt("duration"));
+					ca.setClassID(rs.getInt("class_id"));
+					setErrorMessage(null);
+					break;
+				} else {
+					setErrorMessage("Could not find selected class id");
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
+			return null;
+		} else {
+			return ca;
+		}
+	}
+
+	public static void editClass(ClassAttendance ca, int classID)
+			throws ParseException {
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_CLASSES_ATTENDANCE);
+			String sql = "UPDATE classes_attendance SET class_description='"
+					+ ca.getClassDescription() + "', date='" + ca.getDate()
+					+ "', duration='" + ca.getDuration() + "' WHERE class_id='"
+					+ classID + "';";
+			while (rs.next()) {
+				if (rs.getInt("class_id") == ca.getClassID()) {
+					Statement stmnt2 = createUpdateableStatement(conn);
+					if (ca.getClassDescription().length() < 2) {
+						setErrorMessage("Invalid class description");
+						break;
+					} else if (!isValidDate(ca.getDate())) {
+						setErrorMessage("Invalid date.");
+						break;
+					} else if (ca.getDuration() < 1) {
+						setErrorMessage("Invalid class duration");
+						break;
+					} else {
+						setErrorMessage(null);
+						stmnt2.executeUpdate(sql);
+						break;
+					}
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		}
 	}
 }

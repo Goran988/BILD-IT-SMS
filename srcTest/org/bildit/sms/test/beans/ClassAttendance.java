@@ -10,6 +10,10 @@ public class ClassAttendance {
 	private String date;
 	private int duration;
 
+	public ClassAttendance() {
+		// TODO Auto-generated constructor stub
+	}
+
 	public ClassAttendance(int classID, String classDescription, String date,
 			int duration) {
 		this.classID = classID;
