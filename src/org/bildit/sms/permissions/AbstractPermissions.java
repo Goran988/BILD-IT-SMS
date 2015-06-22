@@ -1,4 +1,4 @@
-package org.bildit.sms.test.permissions;
+package org.bildit.sms.permissions;
 
 import java.sql.SQLException;
 
