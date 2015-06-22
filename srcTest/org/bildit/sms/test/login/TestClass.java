@@ -4,6 +4,7 @@ import java.sql.SQLException;
 import java.text.ParseException;
 
 import org.bildit.sms.test.beans.ClassAttendance;
+import org.bildit.sms.test.beans.VolunteerAttendance;
 import org.bildit.sms.test.permissions.AbstractPermissions;
 import org.bildit.sms.test.permissions.AdminPermissions;
 
@@ -20,15 +21,25 @@ public class TestClass {
 //		System.out.println(returnUserFromDB.getFirstName() + " "+ returnUserFromDB.getDayOfBirth()+ " "+returnUserFromDB.getGender()+" "+ returnUserFromDB.getImagePath());
 //		AdminPermissions.editUser(returnUserFromDB, "novica");
 //		System.out.println(returnUserFromDB.getGender());
-		ClassAttendance ca = AdminPermissions.returnClassAttendance(2);
-		ca.setClassDescription("Drugi cas bajo moj");
-		ca.setDate("2015-12-16");
-		AdminPermissions.editClass(ca, 2);
-		System.err.println(AbstractPermissions.getErrorMessage());
-		System.out.println(ca.getClassID());
-		System.out.println(ca.getDuration());
-		System.out.println(ca.getDate());
-		System.out.println(ca.getClassDescription());
+//		ClassAttendance ca = AdminPermissions.returnClassAttendance(2);
+//		ca.setClassDescription("Drugi cas bajo moj");
+//		ca.setDate("2015-12-16");
+//		AdminPermissions.editClass(ca, 2);
+//		System.err.println(AbstractPermissions.getErrorMessage());
+//		System.out.println(ca.getClassID());
+//		System.out.println(ca.getDuration());
+//		System.out.println(ca.getDate());
+//		System.out.println(ca.getClassDescription());
+		VolunteerAttendance returnVolunteerAttendance = AdminPermissions.returnVolunteerAttendance(2);
+		VolunteerAttendance vaEdit = AdminPermissions.returnVolunteerAttendance(1);
+		vaEdit.setVolunteerActionDescription("Katranjenje");
+		vaEdit.setDuration(12);
+		AdminPermissions.editVolunteerAttendance(vaEdit, 1);
+		
+		ClassAttendance returnClassAttendance = AdminPermissions.returnClassAttendance(3);
+		System.out.println(returnClassAttendance.getClassDescription());
+		
+		System.out.println(returnVolunteerAttendance.getVolunteerActionDescription());
 	}
 
 }

@@ -10,6 +10,7 @@ import java.util.List;
 
 import org.bildit.sms.test.beans.ClassAttendance;
 import org.bildit.sms.test.beans.User;
+import org.bildit.sms.test.beans.VolunteerAttendance;
 
 public class AdminPermissions extends AbstractPermissions {
 	private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
@@ -170,13 +171,21 @@ public class AdminPermissions extends AbstractPermissions {
 			int cityID, int roleID) throws SQLException, ParseException {
 		User newUser = new User();
 
-		if (firstName.length() > 1 && firstName.length() < 45) {
-			newUser.setFirstName(firstName);
+		if (firstName.length() > 1 && firstName.length() < 45
+				&& firstName.matches("^[\\p{L}.'-]+$")) {
+
+			newUser.setFirstName(firstName.substring(0, 1).toUpperCase()
+					+ firstName.substring(1, firstName.length()).toLowerCase());
+
 		} else {
 			setErrorMessage("Incorrect length of first name.");
 		}
-		if (lastName.length() > 1 && lastName.length() < 45) {
-			newUser.setLastName(lastName);
+		if (lastName.length() > 1 && lastName.length() < 45
+				&& lastName.matches("^[\\p{L}.'-]+$")) {
+
+			newUser.setLastName(lastName.substring(0, 1).toUpperCase()
+					+ lastName.substring(1, lastName.length()).toLowerCase());
+
 		} else {
 			setErrorMessage("Incorrect length of last name.");
 		}
@@ -190,7 +199,7 @@ public class AdminPermissions extends AbstractPermissions {
 		} else {
 			setErrorMessage("Invalid date.");
 		}
-		if (phoneNumber.length() > 5) {
+		if (phoneNumber.length() >= 9 && phoneNumber.matches("^[0-9]*$")) {
 			newUser.setPhoneNumber(phoneNumber);
 		} else {
 			setErrorMessage("Invalid phone number.");
@@ -201,7 +210,6 @@ public class AdminPermissions extends AbstractPermissions {
 		} else {
 			setErrorMessage("Invalid gender");
 		}
-
 		if (isEmailValid(email)) {
 			newUser.setEmail(email);
 		}
@@ -512,6 +520,14 @@ public class AdminPermissions extends AbstractPermissions {
 		}
 	}
 
+	/**
+	 * Method that returns object of class attendance
+	 * 
+	 * @param classID
+	 *            we identify entry by its classID
+	 * @return Object ClassAttendance
+	 * @throws SQLException
+	 */
 	public static ClassAttendance returnClassAttendance(int classID)
 			throws SQLException {
 		ClassAttendance ca = new ClassAttendance();
@@ -547,8 +563,19 @@ public class AdminPermissions extends AbstractPermissions {
 		}
 	}
 
+	/**
+	 * Method that edits a class from a database
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param ca
+	 *            Class attendance we want to edit
+	 * @param classID
+	 *            we identify the class attendance by class id parameter
+	 * @throws ParseException
+	 * @throws SQLException
+	 */
 	public static void editClass(ClassAttendance ca, int classID)
-			throws ParseException {
+			throws ParseException, SQLException {
 		try {
 			conn = connectToDb();
 			stmnt = createReadOnlyStatement(conn);
@@ -578,6 +605,112 @@ public class AdminPermissions extends AbstractPermissions {
 			}
 		} catch (SQLException e) {
 			e.printStackTrace();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+	}
+
+	/**
+	 * Method that edits a class from a database
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param ca
+	 *            Class attendance we want to edit
+	 * @param classID
+	 *            we identify the class attendance by class id parameter
+	 * @throws ParseException
+	 * @throws SQLException
+	 */
+	public static void editVolunteerAttendance(VolunteerAttendance va,
+			int classID) throws ParseException, SQLException {
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_VOLUNTEER_ATTENDANCE);
+			String sql = "UPDATE volunteer_attendance SET volunteer_action_description='"
+					+ va.getVolunteerActionDescription()
+					+ "', date='"
+					+ va.getDate()
+					+ "', duration='"
+					+ va.getDuration()
+					+ "' WHERE volunteer_attendance_id='" + classID + "';";
+			while (rs.next()) {
+				if (rs.getInt("volunteer_attendance_id") == va
+						.getVolunteerAttendanceId()) {
+					Statement stmnt2 = createUpdateableStatement(conn);
+					if (va.getVolunteerActionDescription().length() < 2) {
+						setErrorMessage("Invalid class description");
+						break;
+					} else if (!isValidDate(va.getDate())) {
+						setErrorMessage("Invalid date.");
+						break;
+					} else if (va.getDuration() < 1) {
+						setErrorMessage("Invalid class duration");
+						break;
+					} else {
+						setErrorMessage(null);
+						stmnt2.executeUpdate(sql);
+						break;
+					}
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+	}
+
+	/**
+	 * Method that returns object of class attendance
+	 * @author Ognjen Mišiæ
+	 * @param volunteerActionId
+	 *            we identify entry by its classID
+	 * @return Object ClassAttendance
+	 * @throws SQLException
+	 */
+	public static VolunteerAttendance returnVolunteerAttendance(
+			int volunteerActionId) throws SQLException {
+		VolunteerAttendance va = new VolunteerAttendance();
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_VOLUNTEER_ATTENDANCE);
+			while (rs.next()) {
+				if (rs.getInt("volunteer_attendance_id") == volunteerActionId) {
+					va.setVolunteerActionDescription(rs
+							.getString("volunteer_action_description"));
+					va.setDate(rs.getString("date"));
+					va.setDuration(rs.getInt("duration"));
+					va.setVolunteerAttendanceId(rs
+							.getInt("volunteer_attendance_id"));
+					setErrorMessage(null);
+					break;
+				} else {
+					setErrorMessage("Could not find selected volunteer attendance id");
+				}
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
+			return null;
+		} else {
+			return va;
 		}
 	}
 }
