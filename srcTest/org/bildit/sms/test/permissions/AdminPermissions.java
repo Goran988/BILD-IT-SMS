@@ -615,18 +615,18 @@ public class AdminPermissions extends AbstractPermissions {
 	}
 
 	/**
-	 * Method that edits a class from a database
+	 * Method that edits a volunteer action from a database
 	 * 
 	 * @author Ognjen Mišiæ
-	 * @param ca
-	 *            Class attendance we want to edit
-	 * @param classID
-	 *            we identify the class attendance by class id parameter
+	 * @param va
+	 *            volunteer attendance we want to edit
+	 * @param volunteerAttendanceId
+	 *            we identify the volunteer attendance by  id parameter
 	 * @throws ParseException
 	 * @throws SQLException
 	 */
 	public static void editVolunteerAttendance(VolunteerAttendance va,
-			int classID) throws ParseException, SQLException {
+			int volunteerAttendanceId) throws ParseException, SQLException {
 		try {
 			conn = connectToDb();
 			stmnt = createReadOnlyStatement(conn);
@@ -637,7 +637,7 @@ public class AdminPermissions extends AbstractPermissions {
 					+ va.getDate()
 					+ "', duration='"
 					+ va.getDuration()
-					+ "' WHERE volunteer_attendance_id='" + classID + "';";
+					+ "' WHERE volunteer_attendance_id='" + volunteerAttendanceId + "';";
 			while (rs.next()) {
 				if (rs.getInt("volunteer_attendance_id") == va
 						.getVolunteerAttendanceId()) {
@@ -670,11 +670,11 @@ public class AdminPermissions extends AbstractPermissions {
 	}
 
 	/**
-	 * Method that returns object of class attendance
+	 * Method that returns object of volunteer attendance
 	 * @author Ognjen Mišiæ
 	 * @param volunteerActionId
-	 *            we identify entry by its classID
-	 * @return Object ClassAttendance
+	 *            we identify entry by its volunteer action id
+	 * @return Object Volunteer Attendance with fields set from db
 	 * @throws SQLException
 	 */
 	public static VolunteerAttendance returnVolunteerAttendance(
