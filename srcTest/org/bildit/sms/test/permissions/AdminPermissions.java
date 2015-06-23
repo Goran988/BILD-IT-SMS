@@ -13,6 +13,7 @@ import org.bildit.sms.test.beans.User;
 import org.bildit.sms.test.beans.VolunteerAttendance;
 
 public class AdminPermissions extends AbstractPermissions {
+	// regex that checks email validity
 	private static final String EMAIL_PATTERN = "^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@"
 			+ "[A-Za-z0-9-]+(\\.[A-Za-z0-9]+)*(\\.[A-Za-z]{2,})$";
 
@@ -74,7 +75,6 @@ public class AdminPermissions extends AbstractPermissions {
 	 * @throws SQLException
 	 */
 	protected static boolean isEmailValid(String str) throws SQLException {
-		// regex that checks email validity
 		boolean result = false;
 		if (str.matches(EMAIL_PATTERN)) {
 			result = true;
@@ -170,67 +170,74 @@ public class AdminPermissions extends AbstractPermissions {
 			String gender, String email, String password, String imagePath,
 			int cityID, int roleID) throws SQLException, ParseException {
 		User newUser = new User();
+		try {
+			if (firstName.length() > 1 && firstName.length() < 45
+					&& firstName.matches("^[\\p{L}.'-]+$")) {
 
-		if (firstName.length() > 1 && firstName.length() < 45
-				&& firstName.matches("^[\\p{L}.'-]+$")) {
+				newUser.setFirstName(firstName.substring(0, 1).toUpperCase()
+						+ firstName.substring(1, firstName.length())
+								.toLowerCase());
 
-			newUser.setFirstName(firstName.substring(0, 1).toUpperCase()
-					+ firstName.substring(1, firstName.length()).toLowerCase());
+			} else {
+				setErrorMessage("Invalid first name.");
+			}
+			if (lastName.length() > 1 && lastName.length() < 45
+					&& lastName.matches("^[\\p{L}.'-]+$")) {
 
-		} else {
-			setErrorMessage("Incorrect length of first name.");
-		}
-		if (lastName.length() > 1 && lastName.length() < 45
-				&& lastName.matches("^[\\p{L}.'-]+$")) {
+				newUser.setLastName(lastName.substring(0, 1).toUpperCase()
+						+ lastName.substring(1, lastName.length())
+								.toLowerCase());
 
-			newUser.setLastName(lastName.substring(0, 1).toUpperCase()
-					+ lastName.substring(1, lastName.length()).toLowerCase());
+			} else {
+				setErrorMessage("Invalid last name.");
+			}
 
-		} else {
-			setErrorMessage("Incorrect length of last name.");
-		}
+			if (isUsernameValid(username)) {
+				newUser.setUsername(username);
+			}
 
-		if (isUsernameValid(username)) {
-			newUser.setUsername(username);
-		}
+			if (isValidDate(dayOfBirth)) {
+				newUser.setDayOfBirth(dayOfBirth);
+			} else {
+				setErrorMessage("Invalid date.");
+			}
+			if (phoneNumber.length() >= 9 && phoneNumber.matches("^[0-9]*$")) {
+				newUser.setPhoneNumber(phoneNumber);
+			} else {
+				setErrorMessage("Invalid phone number.");
+			}
 
-		if (isValidDate(dayOfBirth)) {
-			newUser.setDayOfBirth(dayOfBirth);
-		} else {
-			setErrorMessage("Invalid date.");
+			if (gender.equals("Male") || gender.equals("Female")) {
+				newUser.setGender(gender);
+			} else {
+				setErrorMessage("Invalid gender");
+			}
+			if (isEmailValid(email)) {
+				newUser.setEmail(email);
+			}
+			if (isPasswordValid(password)) {
+				newUser.setPassword(password);
+			} else {
+				setErrorMessage("Invalid password.");
+			}
+			if (isImagePathValid(imagePath)) {
+				newUser.setImagePath(imagePath);
+			}
+			if (cityID > 0 && cityID < 5) {
+				newUser.setCityID(cityID);
+			} else {
+				setErrorMessage("Invalid city id");
+			}
+			if (roleID == 1 || roleID == 2) {
+				newUser.setRoleID(roleID);
+			} else {
+				setErrorMessage("Wrong role type.");
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
 		}
-		if (phoneNumber.length() >= 9 && phoneNumber.matches("^[0-9]*$")) {
-			newUser.setPhoneNumber(phoneNumber);
-		} else {
-			setErrorMessage("Invalid phone number.");
-		}
-
-		if (gender.equals("Male") || gender.equals("Female")) {
-			newUser.setGender(gender);
-		} else {
-			setErrorMessage("Invalid gender");
-		}
-		if (isEmailValid(email)) {
-			newUser.setEmail(email);
-		}
-		if (isPasswordValid(password)) {
-			newUser.setPassword(password);
-		} else {
-			setErrorMessage("Invalid password.");
-		}
-		if (isImagePathValid(imagePath)) {
-			newUser.setImagePath(imagePath);
-		}
-		if (cityID > 0 && cityID < 5) {
-			newUser.setCityID(cityID);
-		} else {
-			setErrorMessage("Invalid city id");
-		}
-		if (roleID == 1 || roleID == 2) {
-			newUser.setRoleID(roleID);
-		} else {
-			setErrorMessage("Wrong role type.");
-		}
+		// this checks if there is anything in errormessage so it returns a null
+		// object if there is an error
 		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
@@ -419,6 +426,8 @@ public class AdminPermissions extends AbstractPermissions {
 			closeStatement(stmnt);
 			closeConnection(conn);
 		}
+		// this checks if there is anything in errormessage so it returns a null
+		// object if there is an error
 		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
@@ -523,6 +532,7 @@ public class AdminPermissions extends AbstractPermissions {
 	/**
 	 * Method that returns object of class attendance
 	 * 
+	 * @author Ognjen Mišiæ
 	 * @param classID
 	 *            we identify entry by its classID
 	 * @return Object ClassAttendance
@@ -556,6 +566,7 @@ public class AdminPermissions extends AbstractPermissions {
 			closeStatement(stmnt);
 			closeConnection(conn);
 		}
+		// this checks if there is anything in errormessage so it returns a null object if there is an error
 		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
@@ -621,7 +632,7 @@ public class AdminPermissions extends AbstractPermissions {
 	 * @param va
 	 *            volunteer attendance we want to edit
 	 * @param volunteerAttendanceId
-	 *            we identify the volunteer attendance by  id parameter
+	 *            we identify the volunteer attendance by id parameter
 	 * @throws ParseException
 	 * @throws SQLException
 	 */
@@ -637,7 +648,8 @@ public class AdminPermissions extends AbstractPermissions {
 					+ va.getDate()
 					+ "', duration='"
 					+ va.getDuration()
-					+ "' WHERE volunteer_attendance_id='" + volunteerAttendanceId + "';";
+					+ "' WHERE volunteer_attendance_id='"
+					+ volunteerAttendanceId + "';";
 			while (rs.next()) {
 				if (rs.getInt("volunteer_attendance_id") == va
 						.getVolunteerAttendanceId()) {
@@ -671,6 +683,7 @@ public class AdminPermissions extends AbstractPermissions {
 
 	/**
 	 * Method that returns object of volunteer attendance
+	 * 
 	 * @author Ognjen Mišiæ
 	 * @param volunteerActionId
 	 *            we identify entry by its volunteer action id
@@ -707,6 +720,140 @@ public class AdminPermissions extends AbstractPermissions {
 			closeStatement(stmnt);
 			closeConnection(conn);
 		}
+		// this checks if there is anything in errormessage so it returns a null object if there is an error
+		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
+			return null;
+		} else {
+			return va;
+		}
+	}
+
+	/**
+	 * Method that takes a passed class attendance object and adds it to the
+	 * table in db
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param ca
+	 *            a new entry in to be added to the table
+	 */
+	public static void addClass(ClassAttendance ca) throws SQLException {
+		if (ca != null) {
+			try {
+				conn = connectToDb();
+				stmnt = createUpdateableStatement(conn);
+				String sql = "INSERT INTO classes_attendance (class_description, date, duration) VALUES('"
+						+ ca.getClassDescription()
+						+ "','"
+						+ ca.getDate()
+						+ "','" + ca.getDuration() + "');";
+				stmnt.executeUpdate(sql);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				closeStatement(stmnt);
+				closeConnection(conn);
+			}
+		}
+	}
+
+	/**
+	 * Method that creates a ClassAttendance object
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param classDescription
+	 *            argument describing the class
+	 * @param date
+	 *            of the class
+	 * @param duration
+	 *            duration of the class
+	 * @return an object
+	 * @throws ParseException
+	 */
+	public static ClassAttendance createClass(String classDescription,
+			String date, double duration) throws ParseException {
+		ClassAttendance ca = new ClassAttendance();
+		if (classDescription.length() > 2 && classDescription.length() < 45) {
+			ca.setClassDescription(classDescription);
+		} else {
+			setErrorMessage("Class description invalid.");
+		}
+		if (isValidDate(date)) {
+			ca.setDate(date);
+		}
+		if (duration > 0) {
+			ca.setDuration((int) duration);
+		} else {
+			setErrorMessage("Invalid duraton.");
+		}
+		// this checks if there is anything in errormessage so it returns a null object if there is an error
+		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
+			return null;
+		} else {
+			return ca;
+		}
+	}
+
+	/**
+	 * Method that takes a passed volunteer attendance object and adds it to the
+	 * table in db
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param va
+	 *            a new entry in to be added to the table
+	 */
+	public static void addVolunteerAction(VolunteerAttendance va)
+			throws SQLException {
+		if (va != null) {
+			try {
+				conn = connectToDb();
+				stmnt = createUpdateableStatement(conn);
+				String sql = "INSERT INTO volunteer_attendance (volunteer_action_description, date, duration) VALUES('"
+						+ va.getVolunteerActionDescription()
+						+ "','"
+						+ va.getDate() + "','" + va.getDuration() + "');";
+				stmnt.executeUpdate(sql);
+			} catch (SQLException e) {
+				e.printStackTrace();
+			} finally {
+				closeStatement(stmnt);
+				closeConnection(conn);
+			}
+		}
+	}
+
+	/**
+	 * Method that creates a VolunteerAttendance object
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param volunteerActionDescription
+	 *            argument describing the class
+	 * @param date
+	 *            of the class
+	 * @param duration
+	 *            duration of the class
+	 * @return an object of type volunteer attendance
+	 * @throws ParseException
+	 */
+	public static VolunteerAttendance createVolunteerAction(
+			String volunteerActionDescription, String date, double duration)
+			throws ParseException {
+		VolunteerAttendance va = new VolunteerAttendance();
+		if (volunteerActionDescription.length() > 2
+				&& volunteerActionDescription.length() < 45) {
+			va.setVolunteerActionDescription(volunteerActionDescription);
+		} else {
+			setErrorMessage("Volunteer action description invalid.");
+		}
+		if (isValidDate(date)) {
+			va.setDate(date);
+		}
+		if (duration > 0) {
+			va.setDuration((int) duration);
+		} else {
+			setErrorMessage("Invalid duraton.");
+		}
+		// this checks if there is anything in errormessage so it returns a null
+		// object if there is an error
 		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
