@@ -1,16 +1,20 @@
 package org.bildit.sms.test.permissions;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.InputMismatchException;
 import java.util.List;
 
 import org.bildit.sms.test.beans.ClassAttendance;
 import org.bildit.sms.test.beans.User;
 import org.bildit.sms.test.beans.VolunteerAttendance;
+
+import com.sun.rmi.rmid.ExecOptionPermission;
 
 public class AdminPermissions extends AbstractPermissions {
 	// regex that checks email validity
@@ -566,7 +570,8 @@ public class AdminPermissions extends AbstractPermissions {
 			closeStatement(stmnt);
 			closeConnection(conn);
 		}
-		// this checks if there is anything in errormessage so it returns a null object if there is an error
+		// this checks if there is anything in errormessage so it returns a null
+		// object if there is an error
 		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
@@ -708,7 +713,7 @@ public class AdminPermissions extends AbstractPermissions {
 					setErrorMessage(null);
 					break;
 				} else {
-					setErrorMessage("Could not find selected volunteer attendance id");
+					setErrorMessage("Could not find selected volunteer attendance id.");
 				}
 			}
 		} catch (SQLException e) {
@@ -720,7 +725,8 @@ public class AdminPermissions extends AbstractPermissions {
 			closeStatement(stmnt);
 			closeConnection(conn);
 		}
-		// this checks if there is anything in errormessage so it returns a null object if there is an error
+		// this checks if there is anything in errormessage so it returns a null
+		// object if there is an error
 		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
@@ -777,15 +783,20 @@ public class AdminPermissions extends AbstractPermissions {
 		} else {
 			setErrorMessage("Class description invalid.");
 		}
-		if (isValidDate(date)) {
+		// we reverse validation cause the point is to plan classes ahead and
+		// enter them to table
+		if (!isValidDate(date)) {
 			ca.setDate(date);
+		} else {
+			setErrorMessage("Can't plan classes in past.");
 		}
 		if (duration > 0) {
 			ca.setDuration((int) duration);
 		} else {
 			setErrorMessage("Invalid duraton.");
 		}
-		// this checks if there is anything in errormessage so it returns a null object if there is an error
+		// this checks if there is anything in errormessage so it returns a null
+		// object if there is an error
 		if (getErrorMessage() != null && !getErrorMessage().isEmpty()) {
 			return null;
 		} else {
@@ -844,8 +855,12 @@ public class AdminPermissions extends AbstractPermissions {
 		} else {
 			setErrorMessage("Volunteer action description invalid.");
 		}
-		if (isValidDate(date)) {
+		// we reverse validation cause the point is to plan volunteer actions
+		// ahead and enter them to table
+		if (!isValidDate(date)) {
 			va.setDate(date);
+		} else {
+			setErrorMessage("Can't plan classes in past.");
 		}
 		if (duration > 0) {
 			va.setDuration((int) duration);
@@ -860,4 +875,131 @@ public class AdminPermissions extends AbstractPermissions {
 			return va;
 		}
 	}
+
+	/**
+	 * Method that takes username and classID and adds the relation in the table
+	 * of user-class relation
+	 * 
+	 * @author Ognjen Mišiæ
+	 * @param username
+	 *            of the user found from the users table
+	 * @param classID
+	 *            id of the class we want to put the user in
+	 * @throws SQLException
+	 * @throws InputMismatchException
+	 */
+	@SuppressWarnings("resource")
+	public static void addUserToClass(String username, int classID)
+			throws SQLException {
+		Statement stmnt2 = null;
+		Statement stmnt3 = null;
+		ResultSet rs2 = null;
+		ResultSet rs3 = null;
+		Statement stmnt4 = null;
+		int userId = 0;
+		boolean canWrite = false;
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+			rs = stmnt.executeQuery(SELECT_ALL_FROM_USERS);
+			stmnt2 = createReadOnlyStatement(conn);
+			rs2 = stmnt2
+					.executeQuery("SELECT * FROM classes_attendance_user_relation");
+
+			stmnt4 = createReadOnlyStatement(conn);
+			rs3 = stmnt4.executeQuery(SELECT_ALL_FROM_CLASSES_ATTENDANCE);
+
+			// get the final value of classes attendance class id
+			rs3.last();
+			int rows = rs3.getInt("class_id");
+
+			// label that helps us break the outer loop
+			outerloop: while (rs.next()) {
+				if (rs.getString("username").equals(username)) {
+					userId = rs.getInt("user_id");
+					while (rs2.next()) {
+						if (rows < classID) {
+							setErrorMessage("No such class");
+							break outerloop;
+						} else if (rs2.getInt("users_user_id") == userId) {
+							if (rs2.getInt("classes_attendance_class_id") == classID) {
+								canWrite = false;
+								setErrorMessage("User is already taking that class.");
+								break outerloop;
+							} else {
+								canWrite = true;
+							}
+						} else {
+							canWrite = true;
+						}
+					}
+				} else {
+					setErrorMessage("No such user.");
+				}
+			}
+			if (canWrite) {
+				String sql = "INSERT INTO classes_attendance_user_relation (users_user_id, classes_attendance_class_id) VALUES ('"
+						+ userId + "','" + classID + "');";
+				stmnt3 = createUpdateableStatement(conn);
+				stmnt3.executeUpdate(sql);
+				setErrorMessage(null);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (rs2 != null) {
+				rs2.close();
+			}
+			if (rs3 != null) {
+				rs3.close();
+			}
+			closeStatement(stmnt4);
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt3);
+			closeStatement(stmnt2);
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+	}
+
+	/** Check this method and apply changes to remove from volunteer attendance, and write this javadoc correctlxy..
+	 * @author Ognjen Laziæ
+	 * @param classID
+	 * @throws SQLException
+	 */
+	public static void removeAllUsersFromClass(int classID) throws SQLException {
+
+		try {
+			conn = connectToDb();
+			stmnt = createReadOnlyStatement(conn);
+			rs = stmnt
+					.executeQuery("SELECT * FROM classes_attendance_user_relation");
+			boolean canWrite = false;
+			while (rs.next()) {
+				if (rs.getInt("classes_attendance_class_id") == classID) {
+					canWrite = true;
+					setErrorMessage(null);
+					break;
+				} else {
+					setErrorMessage("Could not delete, invalid class ID.");
+				}
+			}
+			if (canWrite) {
+				String statement = "DELETE FROM `bildit_sms`.`classes_attendance_user_relation` WHERE `classes_attendance_class_id`='";
+				statement += classID + "';";
+				stmnt.executeUpdate(statement);
+			}
+		} catch (SQLException e) {
+			e.printStackTrace();
+		} finally {
+			if (rs != null) {
+				rs.close();
+			}
+			closeStatement(stmnt);
+			closeConnection(conn);
+		}
+	}
+
 }
